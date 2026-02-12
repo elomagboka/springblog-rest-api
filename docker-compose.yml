@@ -1,0 +1,80 @@
+#version: "3.8"
+services:
+  springboot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: springblog-app
+    ports:
+      - "8080:8080"
+    environment:
+      MYSQL_SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/springblog_db?useSSL=false&allowPublicKeyRetrieval=true
+      MYSQL_SPRING_DATASOURCE_USERNAME: root
+      MYSQL_SPRING_DATASOURCE_PASSWORD: root_password
+      MYSQL_SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      MYSQL_SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+      POSTGRES_SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/springblog_db
+      POSTGRES_SPRING_DATASOURCE_USERNAME: springblog_user
+      POSTGRES_SPRING_DATASOURCE_PASSWORD: postgres_password
+      POSTGRES_SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      POSTGRES_SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - springblog-network
+    restart: unless-stopped
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: springblog_db
+      MYSQL_USER: springblog_user
+      MYSQL_PASSWORD: springblog_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - springblog-network
+    restart: unless-stopped
+
+  postgres-db:
+    image: postgres:15
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: springblog_db
+      POSTGRES_USER: springblog_user
+      POSTGRES_PASSWORD: postgres_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U springblog_user -d springblog_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - springblog-network
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  postgres-data:
+
+networks:
+  springblog-network:
+    driver: bridge
