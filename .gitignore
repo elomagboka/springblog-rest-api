@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Claude Code ###
+tmpclaude-6b6c-cwd
+tmpclaude-b43f-cwd
